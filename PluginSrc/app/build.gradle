@@ -39,12 +39,21 @@ dependencies {
 }
 
 task deleteOldJar(type: Delete) {
-    delete 'release/classes.jar'
+    delete 'release/simple-android-notifications/classes.jar'
 }
 
 task exportJar(type: Copy) {
     from('build/intermediates/bundles/default/classes.jar')
-    into('release/')
+    into('release/simple-android-notifications/')
 }
 
-exportJar.dependsOn(deleteOldJar, build)
+task pluginCreate(type: Zip) {
+    from 'release/simple-android-notifications/'
+    include '*'
+    include '*/*' //to include contents of a folder present inside Reports directory
+    archiveName 'simple-android-notifications.aar'
+    destinationDir = file('release/')
+}
+
+pluginCreate.dependsOn(deleteOldJar, build)
+pluginCreate.dependsOn(exportJar, build)
