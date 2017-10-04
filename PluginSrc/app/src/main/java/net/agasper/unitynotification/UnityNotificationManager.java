@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.NotificationManager;
+import android.app.NotificationChannel;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -17,6 +18,7 @@ import android.os.Build;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.TaskStackBuilder;
 
+import android.util.Log;
 import com.unity3d.player.UnityPlayer;
 
 public class UnityNotificationManager extends BroadcastReceiver
@@ -73,17 +75,20 @@ public class UnityNotificationManager extends BroadcastReceiver
         String title = intent.getStringExtra("title");
         String message = intent.getStringExtra("message");
         String s_icon = intent.getStringExtra("s_icon");
-        String l_icon = intent.getStringExtra("l_icon");
+
         int color = intent.getIntExtra("color", 0);
         String bundle = intent.getStringExtra("bundle");
         Boolean sound = intent.getBooleanExtra("sound", false);
-        Boolean vibrate = intent.getBooleanExtra("vibrate", false);
         Boolean lights = intent.getBooleanExtra("lights", false);
         int id = intent.getIntExtra("id", 0);
 
         Resources res = context.getResources();
 
         Intent notificationIntent = context.getPackageManager().getLaunchIntentForPackage(bundle);
+        if(notificationIntent == null){
+            Log.d("Notification", "error notification intent null, using invalid bundle name");
+            return;
+        }
 
         TaskStackBuilder stackBuilder = TaskStackBuilder.create(context);
         stackBuilder.addNextIntent(notificationIntent);
@@ -91,39 +96,68 @@ public class UnityNotificationManager extends BroadcastReceiver
         PendingIntent pendingIntent = PendingIntent.getActivity(context, 0,
                 notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(context);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
 
-        builder.setContentIntent(pendingIntent)
-                .setAutoCancel(true)
-                .setContentTitle(title)
-                .setContentText(message);
+            String idChannel = "my_channel_01";
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
+            NotificationChannel mChannel = new NotificationChannel(idChannel, title, NotificationManager.IMPORTANCE_HIGH);
+            // Configure the notification channel.
+            mChannel.setDescription(message);
+            mChannel.enableLights(true);
+            mChannel.setLightColor(Color.GREEN);
+            notificationManager.createNotificationChannel(mChannel);
+
+            Notification.Builder builder = new Notification.Builder(context, idChannel);
+
+            builder.setContentIntent(pendingIntent)
+                    .setAutoCancel(true)
+                    .setContentTitle(title)
+                    .setContentText(message);
+
             builder.setColor(color);
 
-        if (ticker != null && ticker.length() > 0)
-            builder.setTicker(ticker);
+            if (ticker != null && ticker.length() > 0)
+                builder.setTicker(ticker);
 
-        if (s_icon != null && s_icon.length() > 0)
-            builder.setSmallIcon(res.getIdentifier(s_icon, "drawable", context.getPackageName()));
+            if (s_icon != null && s_icon.length() > 0)
+                builder.setSmallIcon(res.getIdentifier(s_icon, "drawable", context.getPackageName()));
 
-        if (l_icon != null && l_icon.length() > 0)
-            builder.setLargeIcon(BitmapFactory.decodeResource(res, res.getIdentifier(l_icon, "drawable", context.getPackageName())));
+            if (sound)
+                builder.setSound(RingtoneManager.getDefaultUri(2));
 
+            if (lights)
+                builder.setLights(Color.GREEN, 3000, 3000);
 
-        if (sound)
-            builder.setSound(RingtoneManager.getDefaultUri(2));
+            Notification notification = builder.build();
 
-        if (vibrate)
-            builder.setVibrate(new long[] {
-                    1000L, 1000L
-            });
+            notificationManager.notify(id, notification);
+        } else {
+            NotificationCompat.Builder builder = new NotificationCompat.Builder(context);
 
-        if (lights)
-            builder.setLights(Color.GREEN, 3000, 3000);
+            builder.setContentIntent(pendingIntent)
+                    .setAutoCancel(true)
+                    .setContentTitle(title)
+                    .setContentText(message);
 
-        Notification notification = builder.build();
-        notificationManager.notify(id, notification);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
+                builder.setColor(color);
+
+            if (ticker != null && ticker.length() > 0)
+                builder.setTicker(ticker);
+
+            if (s_icon != null && s_icon.length() > 0)
+                builder.setSmallIcon(res.getIdentifier(s_icon, "drawable", context.getPackageName()));
+
+            if (sound)
+                builder.setSound(RingtoneManager.getDefaultUri(2));
+
+            if (lights)
+                builder.setLights(Color.GREEN, 3000, 3000);
+
+            Notification notification = builder.build();
+
+            notificationManager.notify(id, notification);
+        }
     }
 
     public static void CancelPendingNotification(int id)
