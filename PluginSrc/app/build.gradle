@@ -33,7 +33,7 @@ dependencies {
     androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
-    compile 'com.android.support:appcompat-v7:25.3.1'
+    compile 'com.android.support:appcompat-v7:26.1.0'
     testCompile 'junit:junit:4.12'
     compile files('libs/classes.jar')
 }
@@ -51,6 +51,7 @@ task pluginCreate(type: Zip) {
     from 'release/simple-android-notifications/'
     include '*'
     include '*/*' //to include contents of a folder present inside Reports directory
+    include '*/*/*' //to include contents of a folder present inside Reports directory
     archiveName 'simple-android-notifications.aar'
     destinationDir = file('release/')
 }
